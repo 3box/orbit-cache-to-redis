@@ -20,8 +20,12 @@ const dirs = p => readdirSync(p).filter(f => statSync(join(p, f)).isDirectory())
 const getDBStream = async (db) => {
   return new Promise((resolve, reject) => {
     db.open( err => {
-      if (err) reject(err)
-      resolve(iteratorStream(db.iterator({limit: -1 })))
+      if (err) {
+        console.log(err)
+        resolve()
+      } else {
+        resolve(iteratorStream(db.iterator({limit: -1 })))
+      }
     })
   })
 }
@@ -59,6 +63,10 @@ const syncStore = async (store) => {
   const dbRedisCache = await orbitRedisCache.load('', {root: store, path: subPath})
   const db = leveldown(dbpath)
   const dbStream = await getDBStream(db)
+  if (!dbStream) {
+    console.log(`Copying Failed: ${storeName} \n`)
+    return
+  }
   let keyCount = 0
   dbStream.on('data', (kv) => {
     // console.log('%s -> %s \n', kv.key, kv.value)
