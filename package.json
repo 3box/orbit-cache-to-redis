@@ -1,19 +1,19 @@
 {
   "name": "orbit-cache-to-redis",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "Transfer orbit-cache to a redis orbit-cache",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "bin" : {
-    "orbit-cache-copy" : "./index.js"
+  "bin": {
+    "orbit-cache-copy": "./index.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "level-iterator-stream": "^4.0.0",
     "leveldown": "^4.0.2",
-    "orbit-db-cache-redis": "0.0.2"
+    "orbit-db-cache-redis": "0.0.3"
   }
 }
