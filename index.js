@@ -2,29 +2,77 @@ const leveldown = require('leveldown')
 const iteratorStream = require('level-iterator-stream')
 const { readdirSync, statSync } = require('fs')
 const { join } = require('path')
+const redisCache = require('orbit-db-cache-redis')
 
-const path = './orbitpath/QmRKsg1bAu9Q6GabQvmkA36RV28X928bdAQLYMQUkkSVWJ/12202b1e16eed4fae4e03c16dcfca812208e7ba8699c50a13c9ca917d4b614b17124.root'
+const path = './orbitpath'
+const redisHost = '127.0.0.1'
+
+const orbitRedisCache = redisCache({host: redisHost})
 
 const dirs = p => readdirSync(p).filter(f => statSync(join(p, f)).isDirectory())
 
-// console.log(dirs('./orbitpath'))
-
-// For each dir
-  // get subfolder - (will there be multiple ever???)
-  // creates orbit name
-  // create and open a redis orbit db cache instance, pass name  (need to update orbidb redis to namespace by store name)
-  // open as level down db and read create stream
-  // on data from stream, put to redis cache instance
-
-
-const db = leveldown(path)
-
-db.open(function (err) {
-  if (err) throw err
-  const stream = iteratorStream(db.iterator({limit: -1 }))
-  stream.on('data', (kv) => {
-    console.log('%s -> %s', kv.key, kv.value)
+const getDBStream = async (db) => {
+  return new Promise((resolve, reject) => {
+    db.open( err => {
+      if (err) reject(err)
+      resolve(iteratorStream(db.iterator({limit: -1 })))
+    })
   })
-})
+}
 
-setInterval(function() {}, 1000);
+let streamCloseCount = 0
+
+const streamClose = (stream) => {
+  return new Promise(function(resolve, reject) {
+    stream.on('close', () => {
+      stream.destroy()
+      streamCloseCount++
+      resolve()
+    })
+  })
+}
+
+let closeDBCount = 0
+
+const closeDb = (db) => {
+  return new Promise(function(resolve, reject) {
+    db.close(err => {
+      if (err) console.log(err)
+      closeDBCount++
+      resolve()
+    })
+  })
+}
+
+const syncStore = async (store) => {
+  const subPath = dirs(`${path}/${store}`)[0] // ever more than 1?
+  if (subPath === 'keystore') return
+  const storeName = `${store}/${subPath}`
+  console.log(`Copying Store: ${storeName} \n`)
+  const dbpath = `${path}/${storeName}`
+  const dbRedisCache = await orbitRedisCache.load('', {root: store, path: subPath})
+  const db = leveldown(dbpath)
+  const dbStream = await getDBStream(db)
+  let keyCount = 0
+  dbStream.on('data', (kv) => {
+    // console.log('%s -> %s \n', kv.key, kv.value)
+    dbRedisCache.set(kv.key.toString(), kv.value.toString())
+    keyCount++
+  })
+  await streamClose(dbStream)
+  console.log(`Copied ${keyCount} entries: ${storeName} \n`)
+  await closeDb(db)
+}
+
+const run = async (path) => {
+  const stores = dirs(path)
+  // 1 store is keys for orbit node
+  console.log(`Attempting to copy ${stores.length - 1} store caches ....\n`)
+  for (i = 0; i < stores.length; i++) {
+    await syncStore(stores[i])
+  }
+  console.log(`Finished: Copied ${streamCloseCount} store caches \n`)
+  console.log(`Closed ${closeDBCount} caches \n`)
+}
+
+run(path)
