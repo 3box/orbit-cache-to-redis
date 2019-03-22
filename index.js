@@ -1,11 +1,17 @@
+#!/usr/bin/env node
+
+const [,, ...args] = process.argv
+
+if (args.length !==  2) throw new Error('Need two args, source orbit cache folder, and destination redis host')
+
 const leveldown = require('leveldown')
 const iteratorStream = require('level-iterator-stream')
 const { readdirSync, statSync } = require('fs')
 const { join } = require('path')
 const redisCache = require('orbit-db-cache-redis')
 
-const path = './orbitpath'
-const redisHost = '127.0.0.1'
+const path = args[0]
+const redisHost = args[1]
 
 const orbitRedisCache = redisCache({host: redisHost})
 
