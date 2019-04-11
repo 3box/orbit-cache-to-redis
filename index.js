@@ -54,17 +54,20 @@ const closeDb = (db) => {
   })
 }
 
+let copyFailedCount = 0
+
 const syncStore = async (store) => {
   const subPath = dirs(`${path}/${store}`)[0] // ever more than 1?
   if (subPath === 'keystore') return
   const storeName = `${store}/${subPath}`
-  console.log(`Copying Store: ${storeName} \n`)
+  // console.log(`Copying Store: ${storeName} \n`)
   const dbpath = `${path}/${storeName}`
   const dbRedisCache = await orbitRedisCache.load('', {root: store, path: subPath})
   const db = leveldown(dbpath)
   const dbStream = await getDBStream(db)
   if (!dbStream) {
     console.log(`Copying Failed: ${storeName} \n`)
+    copyFailedCount++
     return
   }
   let keyCount = 0
@@ -74,7 +77,7 @@ const syncStore = async (store) => {
     keyCount++
   })
   await streamClose(dbStream)
-  console.log(`Copied ${keyCount} entries: ${storeName} \n`)
+  // console.log(`Copied ${keyCount} entries: ${storeName} \n`)
   await closeDb(db)
 }
 
@@ -87,6 +90,7 @@ const run = async (path) => {
   }
   console.log(`Finished: Copied ${streamCloseCount} store caches \n`)
   console.log(`Closed ${closeDBCount} caches \n`)
+  console.log(`Failed to copy ${copyFailedCount} caches \n`)
 }
 
 run(path)

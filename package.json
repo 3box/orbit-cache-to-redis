@@ -1,6 +1,6 @@
 {
   "name": "orbit-cache-to-redis",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Transfer orbit-cache to a redis orbit-cache",
   "main": "index.js",
   "scripts": {
