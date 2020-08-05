@@ -10,7 +10,7 @@
     "orbit-cache-copy": "./index.js"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "level-iterator-stream": "^4.0.0",
     "leveldown": "^4.0.2",
